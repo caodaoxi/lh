@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.lh.modules.eplCategory.dao.EplCategoryDao" >
+    
+	<select id="findList" resultType="EplCategory">
+		select
+		id
+		,category
+		,category_describe AS categoryDescribe
+		from rtc.rtc_epl_category
+	</select>
+
+	<select id="get" resultType="EplCategory">
+		select
+		id
+		,category
+		,category_describe AS categoryDescribe
+		from rtc.rtc_epl_category
+		where id=${id}
+	</select>
+
+	<update id="update">
+		UPDATE rtc.rtc_epl_category SET
+		category = #{category}
+		,category_describe = #{categoryDescribe}
+		WHERE id = #{id}
+	</update>
+
+	<insert id="insert">
+		INSERT INTO rtc.rtc_epl_category(
+		category
+		,category_describe
+		) VALUES (
+		#{category}
+		,#{categoryDescribe}
+		)
+	</insert>
+
+	<update id="delete">
+		DELETE FROM rtc.rtc_epl_category
+		WHERE id = #{id}
+	</update>
+
+	<select id="findUniqueByProperty" resultType="EplCategory" statementType="STATEMENT">
+		select
+		id
+		,category
+		,category_describe AS categoryDescribe
+		FROM rtc.rtc_epl_category 
+		where ${propertyName} = '${value}'
+	</select>
+
+  	<select id="findTypeList" resultType="EplCategory">
+    	select
+		id
+		,category
+    	from rtc_epl_category
+  	</select>
+</mapper>

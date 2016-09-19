@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.lh.modules.db.dao.DbDao" >
+	<select id="findList" resultType="Db">
+		select
+    	id, 
+    	username, 
+    	db_password AS dbPassword, 
+    	db_type AS dbType, 
+    	db_name AS dbName, 
+    	db_url AS dbUrl, 
+    	connection_lifecycle AS connectionLifecycle, 
+    	initial_size AS initialSize, 
+    	cache_reference_type AS cacheReferenceType, 
+    	db_describe AS dbDescribe, 
+    	source_factory AS sourceFactory, 
+    	max_age_seconds AS maxAgeSeconds, 
+    	purge_interval_seconds AS purgeIntervalSeconds, 
+    	db_props AS dbProps
+		from rtc.rtc_db
+		<if test="keyword != null">
+			where username like '%${keyword}%' or db_name like '%${keyword}%'
+		</if>
+	</select>
+
+	<select id="get" resultType="Db">
+		select
+    	username, 
+    	db_password AS dbPassword, 
+    	db_type AS dbType, 
+    	db_name AS dbName, 
+    	db_url AS dbUrl, 
+    	connection_lifecycle AS connectionLifecycle, 
+    	initial_size AS initialSize, 
+    	cache_reference_type AS cacheReferenceType, 
+    	db_describe AS dbDescribe, 
+    	source_factory AS sourceFactory, 
+    	max_age_seconds AS maxAgeSeconds, 
+    	purge_interval_seconds AS purgeIntervalSeconds, 
+    	db_props AS dbProps
+		from rtc.rtc_db
+		where id=${id}
+	</select>
+
+	<update id="update">
+	    update rtc_db
+	    <set >
+	      <if test="username != null" >
+	        username = #{username,jdbcType=VARCHAR},
+	      </if>
+	      <if test="dbPassword != null" >
+	        db_password = #{dbPassword,jdbcType=VARCHAR},
+	      </if>
+	      <if test="dbType != null" >
+	        db_type = #{dbType,jdbcType=BIT},
+	      </if>
+	      <if test="dbName != null" >
+	        db_name = #{dbName,jdbcType=VARCHAR},
+	      </if>
+	      <if test="dbUrl != null" >
+	        db_url = #{dbUrl,jdbcType=VARCHAR},
+	      </if>
+	      <if test="connectionLifecycle != null" >
+	        connection_lifecycle = #{connectionLifecycle,jdbcType=VARCHAR},
+	      </if>
+	      <if test="initialSize != null" >
+	        initial_size = #{initialSize,jdbcType=INTEGER},
+	      </if>
+	      <if test="cacheReferenceType != null" >
+	        cache_reference_type = #{cacheReferenceType,jdbcType=VARCHAR},
+	      </if>
+	      <if test="dbDescribe != null" >
+	        db_describe = #{dbDescribe,jdbcType=VARCHAR},
+	      </if>
+	      <if test="sourceFactory != null" >
+	        source_factory = #{sourceFactory,jdbcType=BIT},
+	      </if>
+	      <if test="maxAgeSeconds != null" >
+	        max_age_seconds = #{maxAgeSeconds,jdbcType=INTEGER},
+	      </if>
+	      <if test="purgeIntervalSeconds != null" >
+	        purge_interval_seconds = #{purgeIntervalSeconds,jdbcType=INTEGER},
+	      </if>
+	      <if test="dbProps != null" >
+	        db_props = #{dbProps,jdbcType=VARCHAR},
+	      </if>
+	    </set>
+	    where id = #{id,jdbcType=INTEGER}
+	</update>
+
+	<insert id="insert">
+	    insert into rtc_db (
+	    username, 
+	    db_password, 
+	    db_type, 
+	    db_name, db_url, 
+	    connection_lifecycle, 
+	    initial_size, 
+	    cache_reference_type, 
+	    db_describe, 
+	    source_factory, 
+	    max_age_seconds, 
+	    purge_interval_seconds, 
+	    db_props
+	    )values (
+	    #{username,jdbcType=VARCHAR}, 
+	    #{dbPassword,jdbcType=VARCHAR}, 
+	    #{dbType,jdbcType=BIT}, 
+	    #{dbName,jdbcType=VARCHAR}, 
+	    #{dbUrl,jdbcType=VARCHAR}, 
+	    #{connectionLifecycle,jdbcType=VARCHAR}, 
+	    #{initialSize,jdbcType=INTEGER}, 
+	    #{cacheReferenceType,jdbcType=VARCHAR}, 
+	    #{dbDescribe,jdbcType=VARCHAR}, 
+	    #{sourceFactory,jdbcType=BIT}, 
+	    #{maxAgeSeconds,jdbcType=INTEGER}, 
+	    #{purgeIntervalSeconds,jdbcType=INTEGER}, 
+	    #{dbProps,jdbcType=VARCHAR}
+	    )
+	</insert>
+
+	<delete id="delete">
+		DELETE FROM rtc.rtc_db
+		WHERE id = #{id}
+	</delete>
+
+	<select id="findUniqueByProperty" resultType="Db" statementType="STATEMENT">
+		select
+    	id, 
+    	username, 
+    	db_password AS dbPassword, 
+    	db_type AS dbType, 
+    	db_name AS dbName, 
+    	db_url AS dbUrl, 
+    	connection_lifecycle AS connectionLifecycle, 
+    	initial_size AS initialSize, 
+    	cache_reference_type AS cacheReferenceType, 
+    	db_describe AS dbDescribe, 
+    	source_factory AS sourceFactory, 
+    	max_age_seconds AS maxAgeSeconds, 
+    	purge_interval_seconds AS purgeIntervalSeconds, 
+    	db_props AS dbProps
+		FROM rtc.rtc_db 
+		where ${propertyName} = '${value}'
+	</select>
+</mapper>

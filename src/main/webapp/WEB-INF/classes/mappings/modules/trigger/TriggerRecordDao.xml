@@ -1,0 +1,430 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jzsec.modules.trigger.dao.TriggerRecordDao">
+    	<select id="findList" resultType="TriggerRecord">
+		select id, eplId, eplName,  triggerState, triggerTime, status, opinion, dealTime, fundid, orgid, orgname, textState, eplDescribe, thresholds, startTime, endTime
+		from
+		(
+		select tr.id, tr.epl_id eplId, tr.epl_name eplName, tr.trigger_state triggerState, tr.trigger_time triggerTime, substring(tr.end_time, 0, 19) endTime, substring(tr.start_time, 0, 19) startTime,
+		tr.status, tr.opinion, tr.deal_time dealTime, tr.fundid, tj.orgid, tj.orgname, tt.text_state textState, tt.epl_describe eplDescribe, tt.thresholds
+		from rtc_rule_trigger_record tr
+		join
+		(
+		select e.epl_id, e.text_state,e.epl_describe,concat(group_concat(concat(t.threshold_name, '=', t.threshold_value))) thresholds
+		from rtc_epl e
+		left join rtc_threshold t
+		on (e.epl_id=t.epl_id)
+		<if test="eplId != null" >
+			and e.epl_id = #{eplId,jdbcType=INTEGER}
+		</if>
+		group by e.text_state,e.epl_id,e.epl_describe
+		) tt
+		on(tr.epl_id=tt.epl_id)
+		left join
+		(
+			select tc.custid, tc.orgid, tg.orgname
+			from customer tc, org tg
+			where tc.orgid=tg.orgid
+			<if test="orgid != null" >
+				and tc.orgid = #{orgid,jdbcType=VARCHAR}
+			</if>
+			<if test="fundid != null" >
+				and tc.custid = #{fundid,jdbcType=BIGINT}
+			</if>
+		) tj
+		on (tr.fundid=tj.custid)
+		where 1=1
+		<if test="fundid != null" >
+			and tr.fundid = #{fundid,jdbcType=BIGINT}
+		</if>
+		<if test="orgid != null" >
+			and tc.orgid = #{orgid,jdbcType=VARCHAR}
+		</if>
+		<if test="status != null" >
+			and tr.status = #{status,jdbcType=INTEGER}
+		</if>
+		<if test="eplId != null" >
+			and tr.epl_id = #{eplId,jdbcType=INTEGER}
+		</if>
+		<if test="startDate != null and startDate !=''">
+			and tr.trigger_time &gt;= str_to_date(#{startDate,jdbcType=DATE},'%Y-%m-%d %H:%i:%S')
+		</if>
+		<if test="endDate != null and endDate !=''" >
+			and tr.trigger_time &lt;= str_to_date(#{endDate,jdbcType=DATE},'%Y-%m-%d %H:%i:%S')
+		</if>
+		order by  tr.trigger_time desc
+		) ttt
+	</select>
+
+	<select id="get" resultType="TriggerRecord">
+		select id, eplId, eplName, triggerState, triggerTime, status, opinion, dealTime, fundid, orgid, orgname, textState, eplDescribe, thresholds, startTime, endTime
+		from
+		(
+		select tr.id, tr.epl_id eplId, tr.epl_name eplName, tr.trigger_state triggerState, tr.trigger_time triggerTime, tr.end_time endTime, tr.start_time startTime,
+		tr.status, tr.opinion, tr.deal_time dealTime, tr.fundid, tj.orgid, tj.orgname, tt.text_state textState, tt.epl_describe eplDescribe, tt.thresholds
+		from rtc_rule_trigger_record tr
+		join
+		(
+		select e.epl_id, e.text_state,e.epl_describe,concat(group_concat(concat(t.threshold_name, '=', t.threshold_value))) thresholds
+		from rtc_epl e
+		left join rtc_threshold t
+		on (e.epl_id=t.epl_id)
+		group by e.text_state,e.epl_id,e.epl_describe
+		) tt
+		on(tr.epl_id=tt.epl_id)
+		left join
+		(
+		select tc.custid, tc.orgid, tg.orgname
+		from customer tc, org tg
+		where tc.orgid=tg.orgid
+		) tj
+		on (tr.fundid=tj.custid)
+		where id = #{id,jdbcType=INTEGER}
+		) ttt
+	</select>
+
+	<!--<select id="getTriggerStatistics" resultType="TriggerStatistics">-->
+		<!--select date_format(trigger_time,'%Y-%m-%d') triggerDate,-->
+		<!--sum(case when status=1 then 1 else 0 end) processed,-->
+		<!--sum(case when status=2 then 1 else 0 end) ignored,-->
+		<!--sum(case when status=3 then 1 else 0 end) unprocessed,-->
+		<!--sum(case when status=4 then 1 else 0 end) processing,-->
+		<!--count(1) total-->
+		<!--from rtc_rule_trigger_record-->
+		<!--WHERE 1=1-->
+		<!--and trigger_time &gt;= CAST(CAST(SYSDATE()AS DATE)AS DATETIME)-->
+		<!--and trigger_time &lt;= CAST((CAST(SYSDATE()AS DATE) + INTERVAL 1 DAY)AS DATETIME)-->
+		<!--group by date_format(trigger_time,'%Y-%m-%d')-->
+	<!--</select>-->
+	<select id="getTriggerStatistics" resultType="TriggerStatistics">
+		select a.triggerDate,
+		a.processed,
+		a.ignored,
+		a.unprocessed,
+		a.processing,
+		a.processed,
+		a.total,
+		(case when b.processed is null or b.processed=0 then  a.processed else a.processed-b.processed end)  processedAdd,
+		(case when b.ignored is null or b.ignored=0 then a.ignored else a.ignored-b.ignored end)  ignoredAdd,
+		(case when b.unprocessed is null or b.unprocessed=0 then a.unprocessed else a.unprocessed-b.unprocessed end)  unprocessedAdd,
+		(case when b.processing is null or b.processing=0 then a.processing else (a.processing-b.processing)*100 end)  processingAdd,
+		(case when b.total is null or b.total=0 then a.total else a.total-b.total end)  totalAdd,
+		(case when b.processed is null or b.processed=0 then 100 else (a.processed-b.processed)*100/b.processed end)  processedPre,
+		(case when b.ignored is null or b.ignored=0 then 100 else (a.ignored-b.ignored)*100/b.ignored end)  ignoredPre,
+		(case when b.unprocessed is null or b.unprocessed=0 then 100 else (a.unprocessed-b.unprocessed)*100/b.unprocessed  end)  unprocessedPre,
+		(case when b.processing is null or b.processing=0 then 100 else (a.processing-b.processing)*100/b.processing end)  processingPre,
+		(case when b.total is null or b.total=0 then 100 else (a.total-b.total)*100/b.total end)  totalPre
+		from
+		(
+		select
+		<if test="period != null and period != '' and period == 'minute'.toString()">
+			date_format(trigger_time,'%Y-%m-%d %H:%i')
+		</if>
+		<if test="period != null and period != '' and period == 'hour'.toString()">
+			date_format(trigger_time,'%Y-%m-%d %H')
+		</if>
+		<if test="period == null or period == '' or period == 'day'.toString()">
+			date_format(trigger_time,'%Y-%m-%d')
+		</if>
+		triggerDate,
+		sum(case when status=1 then 1 else 0 end) processed,
+		sum(case when status=2 then 1 else 0 end) ignored,
+		sum(case when status=3 then 1 else 0 end) unprocessed,
+		sum(case when status=4 then 1 else 0 end) processing,
+		count(1) total
+		from rtc_rule_trigger_record
+		WHERE 1=1
+		<if test="period == null or period == '' or period == 'day'.toString()">
+			and trigger_time &lt;= CAST((CAST(now()AS DATE) + INTERVAL 1 DAY)AS DATETIME)
+			and trigger_time &gt;= CAST(CAST(now()AS DATE)AS DATETIME)
+			group by date_format(trigger_time,'%Y-%m-%d')
+		</if>
+		<if test="period != null and period != '' and period == 'hour'.toString()">
+			and trigger_time &lt;= now()
+			and trigger_time &gt;= str_to_date(CONCAT(DATE_FORMAT(now(), '%Y-%m-%d %H:'),'00:00'),'%Y-%m-%d %H:%i:%S')
+			group by date_format(trigger_time,'%Y-%m-%d %H')
+		</if>
+		<if test="period != null and period != '' and period == 'minute'.toString()">
+			and trigger_time &lt;= now()
+			and trigger_time &gt;= str_to_date(CONCAT(DATE_FORMAT(now(), '%Y-%m-%d %H:%i:'),'00'),'%Y-%m-%d %H:%i:%S')
+			group by date_format(trigger_time,'%Y-%m-%d %H:%i')
+		</if>
+		) a
+		left join
+		(
+		select 
+		<if test="period != null and period != '' and period == 'minute'.toString()">
+			date_format(trigger_time,'%Y-%m-%d %H:%i')
+		</if>
+		<if test="period != null and period != '' and period == 'hour'.toString()">
+			date_format(trigger_time,'%Y-%m-%d %H')
+		</if>
+		<if test="period == null or period == '' or period == 'day'.toString()">
+			date_format(trigger_time,'%Y-%m-%d')
+		</if>
+		triggerDate,
+		sum(case when status=1 then 1 else 0 end) processed,
+		sum(case when status=2 then 1 else 0 end) ignored,
+		sum(case when status=3 then 1 else 0 end) unprocessed,
+		sum(case when status=4 then 1 else 0 end) processing,
+		count(1) total
+		from rtc_rule_trigger_record
+		WHERE 1=1
+		<if test="period == null or period == '' or period == 'day'.toString()">
+			and trigger_time &lt; CAST(CAST(now() AS DATE)AS DATETIME)
+			and  trigger_time &gt;= CAST((CAST(now()AS DATE) + INTERVAL -1 DAY)AS DATETIME)
+			group by date_format(trigger_time,'%Y-%m-%d')
+			order by date_format(trigger_time,'%Y-%m-%d') desc
+		</if>
+		<if test="period != null and period != '' and period == 'hour'.toString()">
+			and trigger_time &lt; str_to_date(CONCAT(DATE_FORMAT(now(), '%Y-%m-%d %H:'),'00:00'),'%Y-%m-%d %H:%i:%S')
+			and trigger_time &gt;= CAST((str_to_date(CONCAT(DATE_FORMAT(now(), '%Y-%m-%d %H:'),'00:00'),'%Y-%m-%d %H:%i:%S') + INTERVAL -2 HOUR)AS DATETIME)
+			group by date_format(trigger_time,'%Y-%m-%d %H')
+			order by date_format(trigger_time,'%Y-%m-%d %H') desc
+		</if>
+		<if test="period != null and period != '' and period == 'minute'.toString()">
+			and trigger_time &lt; str_to_date(CONCAT(DATE_FORMAT(now(), '%Y-%m-%d %H:%i:'),'00'),'%Y-%m-%d %H:%i:%S')
+			and trigger_time &gt;= CAST((str_to_date(CONCAT(DATE_FORMAT(now(), '%Y-%m-%d %H:%i:'),'00'),'%Y-%m-%d %H:%i:%S') + INTERVAL -2 MINUTE)AS DATETIME)
+			group by date_format(trigger_time,'%Y-%m-%d %H:%i')
+			order by date_format(trigger_time,'%Y-%m-%d %H:%i') desc
+		</if>
+		) b
+		on 1=1
+		order by triggerDate desc
+		limit 1
+	</select>
+	
+	<select id="getTriggerStatisticsNew" resultType="TriggerStatistics">
+		select
+		<if test="period != null and period != '' and period == 'minute'.toString()">
+			date_format(trigger_time,'%Y-%m-%d %H:%i')
+		</if>
+		<if test="period != null and period != '' and period == 'hour'.toString()">
+			date_format(trigger_time,'%Y-%m-%d %H')
+		</if>
+		<if test="period == null or period == '' or period == 'day'.toString()">
+			date_format(trigger_time,'%Y-%m-%d')
+		</if>
+		triggerDate,
+		sum(case when status=1 then 1 else 0 end) processed,
+		sum(case when status=2 then 1 else 0 end) ignored,
+		sum(case when status=3 then 1 else 0 end) unprocessed,
+		sum(case when status=4 then 1 else 0 end) processing,
+		count(1) total
+		from rtc_rule_trigger_record
+		WHERE 1=1
+		<if test="period == null or period == '' or period == 'day'.toString()">
+			and trigger_time &lt;= str_to_date(#{endDate},'%Y-%m-%d %H:%i:%S')
+			and trigger_time &gt;= str_to_date(#{endDate},'%Y-%m-%d')
+			group by date_format(trigger_time,'%Y-%m-%d')
+		</if>
+		<if test="period != null and period != '' and period == 'hour'.toString()">
+			and trigger_time &lt;= str_to_date(#{endDate},'%Y-%m-%d %H:%i:%S')
+			and trigger_time &gt;= str_to_date(#{endDate},'%Y-%m-%d %H')
+			group by date_format(trigger_time,'%Y-%m-%d %H')
+		</if>
+		<if test="period != null and period != '' and period == 'minute'.toString()">
+			and trigger_time &lt;= str_to_date(#{endDate},'%Y-%m-%d %H:%i:%S')
+			and trigger_time &gt;= str_to_date(#{endDate},'%Y-%m-%d %H:%i')
+			group by date_format(trigger_time,'%Y-%m-%d %H:%i')
+		</if>
+	</select>
+
+	<select id="getTriggerStatisticsOld" resultType="TriggerStatistics">
+		select 
+		<if test="period != null and period != '' and period == 'minute'.toString()">
+			date_format(trigger_time,'%Y-%m-%d %H:%i')
+		</if>
+		<if test="period != null and period != '' and period == 'hour'.toString()">
+			date_format(trigger_time,'%Y-%m-%d %H')
+		</if>
+		<if test="period == null or period == '' or period == 'day'.toString()">
+			date_format(trigger_time,'%Y-%m-%d')
+		</if>
+		triggerDate,
+		sum(case when status=1 then 1 else 0 end) processed,
+		sum(case when status=2 then 1 else 0 end) ignored,
+		sum(case when status=3 then 1 else 0 end) unprocessed,
+		sum(case when status=4 then 1 else 0 end) processing,
+		count(1) total
+		from rtc_rule_trigger_record
+		WHERE 1=1
+		<if test="period == null or period == '' or period == 'day'.toString()">
+			and trigger_time &lt; str_to_date(#{endDate},'%Y-%m-%d')
+			and  trigger_time &gt;= CAST((str_to_date(#{endDate},'%Y-%m-%d') + INTERVAL -1 DAY) AS DATETIME)
+			group by date_format(trigger_time,'%Y-%m-%d')
+			order by date_format(trigger_time,'%Y-%m-%d') desc
+		</if>
+		<if test="period != null and period != '' and period == 'hour'.toString()">
+			and trigger_time &lt; str_to_date(#{endDate},'%Y-%m-%d %H')
+			and trigger_time &gt;= CAST((str_to_date(#{endDate},'%Y-%m-%d %H') + INTERVAL -1 HOUR)AS DATETIME)
+			group by date_format(trigger_time,'%Y-%m-%d %H')
+			order by date_format(trigger_time,'%Y-%m-%d %H') desc
+		</if>
+		<if test="period != null and period != '' and period == 'minute'.toString()">
+			and trigger_time &lt; str_to_date(#{endDate},'%Y-%m-%d %H:%i')
+			and trigger_time &gt;= CAST((str_to_date(#{endDate},'%Y-%m-%d %H:%i') + INTERVAL -1 MINUTE)AS DATETIME)
+			group by date_format(trigger_time,'%Y-%m-%d %H:%i')
+			order by date_format(trigger_time,'%Y-%m-%d %H:%i') desc
+		</if>
+	</select>
+	
+	<select id="getTriggerStatisticsByPeriod" resultType="TriggerStatistics" parameterType="java.util.Map">
+		select
+		<if test="period == null or period == '' or period == 'day'.toString()">
+			date_format(trigger_time,'%Y-%m-%d')
+		</if>
+		<if test="period != null and period != '' and period == 'hour'.toString()">
+			date_format(trigger_time,'%Y-%m-%d %H')
+		</if>
+		<if test="period != null and period != '' and period == 'minute'.toString()">
+			date_format(trigger_time,'%Y-%m-%d %H:%i')
+		</if>
+		triggerDate,
+		sum(case when status=1 then 1 else 0 end) processed,
+		sum(case when status=2 then 1 else 0 end) ignored,
+		sum(case when status=3 then 1 else 0 end) unprocessed,
+		sum(case when status=4 then 1 else 0 end) processing,
+		count(1) total
+		from rtc_rule_trigger_record
+		where 1=1
+		<if test="period == null or period == '' or period == 'day'.toString()">
+			and trigger_time &lt;= str_to_date(#{endDate},'%Y-%m-%d %H:%i:%S')
+			and trigger_time &gt;= str_to_date(#{startDate},'%Y-%m-%d %H:%i:%S')
+			group by date_format(trigger_time,'%Y-%m-%d')
+		</if>
+		<if test="period != null and period != '' and period == 'hour'.toString()">
+			and trigger_time &lt;= str_to_date(#{endDate},'%Y-%m-%d %H:%i:%S')
+			and trigger_time &gt;= str_to_date(#{startDate},'%Y-%m-%d %H:%i:%S')
+			group by date_format(trigger_time,'%Y-%m-%d %H')
+		</if>
+		<if test="period != null and period != '' and period == 'minute'.toString()">
+			and trigger_time &lt;= str_to_date(#{endDate},'%Y-%m-%d %H:%i:%S')
+			and trigger_time &gt;= str_to_date(#{startDate},'%Y-%m-%d %H:%i:%S')
+			group by date_format(trigger_time,'%Y-%m-%d %H:%i')
+		</if>
+	</select>
+	
+	<update id="update">
+		UPDATE rtc_rule_trigger_record SET
+			opinion = #{opinion},
+			status = #{status},
+			readFlag = #{readFlag}
+		WHERE id = #{id}
+	</update>
+	
+	<select id="findLatest" resultType="TriggerRecord" parameterType="java.util.Map">
+		select id, eplId, eplName,  triggerState, triggerTime, status, opinion, dealTime, fundid, orgid, orgname, textState, eplDescribe, thresholds, startTime, endTime
+		from
+		(
+		select tr.id, tr.epl_id eplId, tr.epl_name eplName, tr.trigger_state triggerState, tr.trigger_time triggerTime, substring(tr.end_time, 0, 19) endTime, substring(tr.start_time, 0, 19) startTime,
+		tr.status, tr.opinion, tr.deal_time dealTime, tr.fundid, tj.orgid, tj.orgname, tt.text_state textState, tt.epl_describe eplDescribe, tt.thresholds
+		from rtc_rule_trigger_record tr
+		join
+		(
+		select e.epl_id, e.text_state,e.epl_describe,concat(group_concat(concat(t.threshold_name, '=', t.threshold_value))) thresholds
+		from rtc_epl e
+		left join rtc_threshold t
+		on (e.epl_id=t.epl_id)
+		group by e.text_state,e.epl_id,e.epl_describe
+		) tt
+		on(tr.epl_id=tt.epl_id)
+		left join
+		(
+			select tc.custid, tc.orgid, tg.orgname
+			from customer tc, org tg
+			where tc.orgid=tg.orgid
+		) tj
+		on (tr.fundid=tj.custid)
+		where tr.status = 3
+		<if test="startDate != null and startDate !=''">
+			and tr.trigger_time &gt;= str_to_date(#{startDate,jdbcType=DATE},'%Y-%m-%d %H:%i:%S')
+		</if>
+		<if test="endDate != null and endDate !=''" >
+			and tr.trigger_time &lt;= str_to_date(#{endDate,jdbcType=DATE},'%Y-%m-%d %H:%i:%S')
+		</if>
+		order by  tr.trigger_time desc
+		limit 10
+		) ttt
+	</select>
+
+	<delete id="delete">
+		DELETE FROM rtc.rtc_rule_trigger_record
+		WHERE id = #{id}
+	</delete>
+	
+	<select id="findStatisticsList" resultType="TriggerRecord">
+ 			select  tt.epl_id eplId,
+ 						tt.epl_name eplName, 
+ 						count(*) totalCount,
+ 						sum(case when tt.status = 1 then 1 else 0 end) dealCount, 
+ 						sum(case when tt.status = 2 then 1 else 0 end) ignoreCount, 
+ 						sum(case when tt.status = 3 then 1 else 0 end) undealCount, 
+ 						sum(case when tt.status = 4 then 1 else 0 end) verificationCount
+ 			from rtc_rule_trigger_record tt
+ 			where 1=1
+ 			 <if test="status != null" >
+	        and tt.status = #{status}
+	      </if>
+	      <if test="eplId != null" >
+	        and tt.epl_id = #{eplId}
+	      </if>
+		<if test="startDate != null and startDate !=''">
+			and tt.trigger_time &gt;= str_to_date(#{startDate,jdbcType=DATE},'%Y-%m-%d %H:%i:%S')
+		</if>
+		<if test="endDate != null and endDate !=''" >
+			and tt.trigger_time &lt;= str_to_date(#{endDate,jdbcType=DATE},'%Y-%m-%d %H:%i:%S')
+		</if>
+	      group by tt.epl_id,tt.epl_name
+	      order by  tt.epl_id desc
+	</select>
+	<select id="findStatisticsTotalList" resultType="TriggerRecord">
+  		select count(*) totalCount,
+					IFNULL(sum(case when status = 1 then 1 else 0 end), 0) dealCount, 
+					IFNULL(sum(case when status = 2 then 1 else 0 end), 0) ignoreCount, 
+					IFNULL(sum(case when status = 3 then 1 else 0 end), 0) undealCount, 
+					IFNULL(sum(case when status = 4 then 1 else 0 end), 0) verificationCount
+  		from rtc_rule_trigger_record
+  		where 1=1
+		  <if test="status != null" >
+	        and status = #{status}
+	      </if>
+	      <if test="eplId != null" >
+	        and epl_id = #{eplId}
+	      </if>
+		<if test="startDate != null and startDate !=''">
+			and trigger_time &gt;= str_to_date(#{startDate,jdbcType=DATE},'%Y-%m-%d %H:%i:%S')
+		</if>
+		<if test="endDate != null and endDate !=''" >
+			and trigger_time &lt;= str_to_date(#{endDate,jdbcType=DATE},'%Y-%m-%d %H:%i:%S')
+		</if>
+	</select>
+	<select id="findUndealAndTotalCount" resultType="TriggerStatistics" parameterType="java.util.Map">
+	    select 
+			sum(case when status=1 then 1 else 0 end) processed,
+			sum(case when status=2 then 1 else 0 end) ignored,
+			sum(case when status=3 then 1 else 0 end) unprocessed,
+			sum(case when status=4 then 1 else 0 end) processing,
+			count(1) total
+	    from rtc_rule_trigger_record
+	    where 1=1
+	    <if test="startDate != null and startDate !=''">
+			and trigger_time &gt;= str_to_date(#{startDate,jdbcType=DATE},'%Y-%m-%d %H:%i:%S')
+		</if>
+		<if test="endDate != null and endDate !=''" >
+			and trigger_time &lt;= str_to_date(#{endDate,jdbcType=DATE},'%Y-%m-%d %H:%i:%S')
+		</if>
+	  </select>
+	 <select id="findUndealTypes" resultType="java.util.Map" parameterType="java.util.Map">
+	    select count(*) count, epl_id eplId, epl_name eplName
+	    from rtc_rule_trigger_record
+	    where status = 3
+	    <if test="startDate != null and startDate !=''">
+			and trigger_time &gt;= str_to_date(#{startDate,jdbcType=DATE},'%Y-%m-%d %H:%i:%S')
+		</if>
+		<if test="endDate != null and endDate !=''" >
+			and trigger_time &lt;= str_to_date(#{endDate,jdbcType=DATE},'%Y-%m-%d %H:%i:%S')
+		</if>
+	    group by epl_id, epl_name
+	 </select>
+</mapper>

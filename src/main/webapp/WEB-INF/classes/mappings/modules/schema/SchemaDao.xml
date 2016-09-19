@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jzsec.modules.schema.dao.SchemaDao">
+
+	<!--<sql id="schemaColumns">-->
+		<!--select-->
+		<!--id-->
+		<!--,schema_id AS schemaId-->
+		<!--,schema_name AS schemaName-->
+	<!--</sql>-->
+
+	<select id="findList" resultType="Schema">
+		select
+		id
+		,schema_id AS schemaId
+		,schema_name AS schemaName
+		,schema_describe AS schemaDescribe
+		from rtc.rtc_xp_schema
+		<if test="keyword != ''">
+			where schema_name like '%${keyword}%' or schema_describe like '%${keyword}%'
+		</if>
+	</select>
+
+	<select id="get" resultType="Schema">
+		select
+		id
+		,CAST(schema_id AS CHAR(10)) AS schemaId
+		,schema_name AS schemaName
+		,schema_describe AS schemaDescribe
+		from rtc.rtc_xp_schema
+		where schema_id=${schemaId}
+	</select>
+
+	<update id="update">
+		UPDATE rtc.rtc_xp_schema SET
+		schema_id = #{schemaId},
+		schema_name = #{schemaName},
+		schema_describe = #{schemaDescribe}
+		WHERE id = #{id}
+	</update>
+
+	<insert id="insert">
+		INSERT INTO rtc.rtc_xp_schema(
+		schema_id,
+		schema_name,
+		schema_describe
+		) VALUES (
+		#{schemaId},
+		#{schemaName},
+		#{schemaDescribe}
+		)
+	</insert>
+
+	<update id="delete">
+		DELETE FROM rtc.rtc_xp_schema
+		WHERE id = #{id}
+	</update>
+
+	<select id="findUniqueByProperty" resultType="Schema" statementType="STATEMENT">
+		select
+		id
+		,schema_id AS schemaId
+		,schema_name AS schemaName
+		,schema_describe AS schemaDescribe
+		FROM rtc.rtc_xp_schema where ${propertyName} = '${value}'
+	</select>
+</mapper>

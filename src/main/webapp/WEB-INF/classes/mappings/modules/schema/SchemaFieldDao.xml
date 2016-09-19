@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jzsec.modules.schema.dao.SchemaFieldDao">
+
+	<select id="findList" resultType="SchemaField">
+		select
+		id
+		,schema_id AS schemaId
+		,field_name AS fieldName
+		,field_describe AS fieldDescribe
+		,field_type AS fieldType
+		from rtc.rtc_schema_field
+		where schema_id=${schemaId}
+	</select>
+
+	<select id="querySchemaFieldByFieldName" resultType="SchemaField">
+		select
+		id
+		,schema_id AS schemaId
+		,field_name AS fieldName
+		,field_describe AS fieldDescribe
+		,field_type AS fieldType
+		from rtc.rtc_schema_field
+		where field_name='${fieldName}'
+	</select>
+	<update id="delete">
+		DELETE FROM rtc.rtc_schema_field
+		WHERE id = #{id}
+	</update>
+
+	<update id="deleteFields">
+		DELETE FROM rtc.rtc_schema_field
+		WHERE schema_id = #{schemaId}
+	</update>
+
+	<insert id="insert">
+		INSERT INTO rtc.rtc_schema_field(
+		schema_id,
+		field_name,
+		field_type,
+		field_describe
+        ) VALUES (
+		#{schemaId},
+		#{fieldName},
+		#{fieldType},
+		#{fieldDescribe}
+		)
+	</insert>
+
+	<update id="update">
+		UPDATE rtc.rtc_schema_field SET
+		schema_id = #{schemaId},
+		field_name = #{fieldName},
+		field_type = #{fieldType},
+		field_describe = #{fieldDescribe}
+		WHERE id = #{id}
+	</update>
+
+	<select id="findUniqueByProperty" resultType="SchemaField" statementType="STATEMENT">
+		select id
+		,schema_id AS schemaId
+		,field_name AS fieldName
+		,field_describe AS fieldDescribe
+		,field_type AS fieldType FROM rtc.rtc_schema_field where ${propertyName} = '${value}'
+	</select>
+</mapper>

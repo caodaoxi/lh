@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jzsec.modules.epl.dao.ThresholdDao">
+
+	<select id="findList" resultType="Threshold">
+		select 
+		id
+		,epl_id AS eplId 
+		,threshold_name AS thresholdName
+		,threshold_value AS thresholdValue
+		,threshold_describe AS thresholdDescribe
+		FROM rtc.rtc_threshold 
+		where epl_id=${eplId}
+	</select>
+
+	<select id="queryThresholdByThreshold" resultType="Threshold">
+		select
+		id
+		,epl_id AS eplId 
+		,threshold_name AS thresholdName
+		,threshold_value AS thresholdValue
+		,threshold_describe AS thresholdDescribe
+		from rtc.rtc_threshold
+		where threshold_name='${thresholdName}'
+	</select>
+	<delete id="delete">
+		DELETE FROM rtc.rtc_threshold
+		WHERE id = #{id}
+	</delete>
+
+	<delete id="deleteThresholds">
+		DELETE FROM rtc.rtc_threshold
+		WHERE epl_id=#{eplId}
+	</delete>
+
+	<insert id="insert">
+		INSERT INTO rtc.rtc_threshold(
+		epl_id
+		,threshold_name
+		,threshold_value
+		,threshold_describe
+        ) VALUES (
+		#{eplId}
+		,#{thresholdName}
+		,#{thresholdValue}
+		,#{thresholdDescribe}
+		)
+	</insert>
+
+	<update id="update">
+		UPDATE rtc.rtc_threshold SET
+		epl_id = #{eplId}
+		,threshold_name = #{thresholdName}
+		,threshold_value = #{thresholdValue}
+		,threshold_describe = #{thresholdDescribe}
+		WHERE id = #{id}
+	</update>
+
+	<select id="findUniqueByProperty" resultType="Threshold" statementType="STATEMENT">
+		select 
+		id
+		,epl_id AS eplId 
+		,threshold_name AS thresholdName
+		,threshold_value AS thresholdValue
+		,threshold_describe AS thresholdDescribe
+		FROM rtc.rtc_threshold 
+		where ${propertyName} = '${value}'
+	</select>
+</mapper>

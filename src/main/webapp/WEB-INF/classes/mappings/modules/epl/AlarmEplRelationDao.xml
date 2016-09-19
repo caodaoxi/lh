@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jzsec.modules.epl.dao.AlarmEplRelationDao" >
+	<update id="update">
+		UPDATE rtc.rtc_alarm_epl_relation SET
+		alarm_epl_id = #{alarmEplId}
+		WHERE epl_id = #{eplId}
+	</update>
+
+	<insert id="insert">
+		INSERT INTO rtc.rtc_alarm_epl_relation(
+		epl_id,
+		alarm_epl_id
+		) VALUES (
+		#{eplId},
+		#{alarmEplId}
+		)
+	</insert>
+
+	<update id="deleteByEplId">
+		DELETE FROM rtc.rtc_alarm_epl_relation
+		WHERE epl_id = #{eplId}
+	</update>
+	
+	<select id="findUniqueByProperty" resultType="AlarmEplRelation" statementType="STATEMENT">
+		select
+		id
+		,epl_id AS eplId
+		,alarm_epl_id AS alarmEplId
+		FROM rtc.rtc_alarm_epl_relation
+		where ${propertyName} = '${value}'
+	</select>
+</mapper>

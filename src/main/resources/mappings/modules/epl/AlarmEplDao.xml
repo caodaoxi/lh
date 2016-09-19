@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.lh.modules.epl.dao.AlarmEplDao" >
+    
+	<select id="findList" resultType="AlarmEpl">
+		select
+		id
+		,epl_id AS eplId
+		from rtc.rtc_alarm_epl
+	</select>
+
+	<select id="get" resultType="AlarmEpl">
+		select
+		id
+		from rtc.rtc_alarm_epl
+		where epl_id=${eplId}
+	</select>
+
+	<update id="update">
+		UPDATE rtc.rtc_alarm_epl SET
+		epl_id = #{eplId},
+		epl_name = #{eplName},
+		epl = #{epl},
+		epl_describe = #{eplDescribe},
+		alarm_type = #{alarmType},
+		alarm_group_id = #{alarmGroupId},
+		alarm_template = #{alarmTemplate},
+		status = #{status}
+		WHERE id = #{id}
+	</update>
+
+	<insert id="insert">
+		INSERT INTO rtc.rtc_alarm_epl(
+		epl_id
+		,epl_name
+		,epl
+		,epl_describe
+		,alarm_type
+		,alarm_group_id
+		,status
+		,alarm_template
+		) VALUES (
+		#{eplId}
+		,#{eplName}
+		,#{epl}
+		,#{eplDescribe}
+		,#{alarmType}
+		,#{alarmGroupId}
+		,#{status}
+		,#{alarmTemplate}
+		)
+	</insert>
+
+	<delete id="delete">
+		DELETE FROM rtc.rtc_alarm_epl
+		WHERE id = #{id}
+	</delete>
+	
+	<delete id="deleteByEplId">
+		DELETE FROM rtc.rtc_alarm_epl
+		WHERE epl_id = #{alarmEplId}
+	</delete>
+
+	<select id="findUniqueByProperty" resultType="AlarmEpl" statementType="STATEMENT">
+		select
+		id
+		FROM rtc.rtc_alarm_epl 
+		where ${propertyName} = '${value}'
+	</select>
+
+  <select id="findTypeList" resultType="Epl">
+    select 
+    epl_id AS alarmId
+    ,epl_name AS alarmName
+    from rtc_alarm_epl
+  </select>
+  
+   <select id="pushZookeeper" parameterType="java.lang.Integer" resultType="PushAlarmEpl" >
+		select m.id,m.epl_name eplName,m.epl,m.alarm_type alarmType,m.alarm_group_id groupId,m.alarm_template alarmTemplate,m.phone,m.email,
+				concat(group_concat(concat(threshold_name,'=',threshold_value))) thresholds
+		from(
+			select e.epl_id id,e.epl_name,e.epl,e.alarm_type,e.alarm_group_id,e.alarm_template,g.phone,g.email
+			from rtc_alarm_epl e
+			left join(
+				select g.group_id id, GROUP_CONCAT(phone) phone,GROUP_CONCAT(email) email
+				from rtc_alarm_group g
+				left outer join rtc_alarm_group_user gu
+				on(g.group_id=gu.group_id)
+				left outer join rtc_alarm_user u
+				on(gu.user_id=u.user_id)
+			) g
+			on(e.alarm_group_id=g.id)
+		) m
+		left join rtc_alarm_threshold t
+		on m.id=t.epl_id
+		where m.id=#{eplId,jdbcType=INTEGER}
+		group by m.id,m.epl_name,m.epl,m.alarm_type,m.alarm_group_id,m.alarm_template;
+  </select>
+</mapper>

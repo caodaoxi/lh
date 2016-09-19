@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jzsec.modules.udf.dao.UdfDao">
+    
+	<select id="findList" resultType="Udf">
+		select id,
+		       method_name methodName,
+			   cache_reference_type cacheReferenceType,
+			   method_describe methodDescribe,
+			   max_age_seconds maxAgeSeconds,
+			   purge_interval_seconds purgeIntervalSeconds
+		from rtc_method
+	</select>
+	<select id="get" resultType="Udf">
+		select id,
+		       method_name methodName,
+			   cache_reference_type cacheReferenceType,
+			   method_describe methodDescribe,
+			   max_age_seconds maxAgeSeconds,
+			   purge_interval_seconds purgeIntervalSeconds
+		from rtc_method
+		where id=${id}
+	</select>
+
+	<update id="update">
+		UPDATE rtc.rtc_method SET
+		method_name = #{methodName},
+		cache_reference_type = #{cacheReferenceType},
+		method_describe = #{methodDescribe},
+		max_age_seconds = #{maxAgeSeconds},
+		purge_interval_seconds = #{purgeIntervalSeconds}
+		WHERE id = #{id}
+	</update>
+
+	<insert id="insert">
+		INSERT INTO rtc.rtc_method(
+		method_name,
+		cache_reference_type,
+		method_describe,
+		max_age_seconds,
+		purge_interval_seconds
+		) VALUES (
+		#{methodName},
+		#{cacheReferenceType},
+		#{methodDescribe},
+		#{maxAgeSeconds},
+		#{purgeIntervalSeconds}
+		)
+	</insert>
+
+	<update id="delete">
+		DELETE FROM rtc.rtc_method
+		WHERE id = #{id}
+	</update>
+</mapper>

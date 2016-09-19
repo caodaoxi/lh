@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lh.modules.sys.dao.OrgDao">
+	<select id="findList" resultType="Org">
+		select orgid,orgname from org order by orgname
+	</select>
+</mapper>

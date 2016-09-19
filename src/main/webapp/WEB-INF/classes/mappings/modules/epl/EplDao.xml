@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jzsec.modules.epl.dao.EplDao">
+	<select id="findList" resultType="Epl">
+		select ttt.* 
+		, concat(group_concat(concat(tttt.threshold_name, '=', tttt.threshold_value))) thresholds
+		from (
+			select
+			t.id
+			,t.epl_id AS eplId
+			,t.parent_id AS parentId
+			,tt.category AS parentName
+			,t.epl_name AS eplName
+			,t.epl_describe AS eplDescribe
+			,t.status
+			,t.text_state AS textState
+			,t.is_alarm AS isAlarm
+			from rtc.rtc_epl t, rtc.rtc_epl_category tt
+			where t.parent_id = tt.id
+				and t.status != 3
+			<if test="keyword != null">
+				and t.epl_name like '%${keyword}%' or t.epl_describe like '%${keyword}%'
+			</if>
+			<if test="parentId != null">
+				and t.parent_id = ${parentId}
+			</if>
+		) ttt
+		left join rtc_threshold tttt
+  		on ttt.eplId=tttt.epl_id
+		group by ttt.eplId
+  		order by ttt.eplId asc
+	</select>
+
+	<select id="get" resultType="Epl">
+		select
+		t.id
+		,t.epl
+		,t.epl_id AS eplId
+		,t.parent_id AS parentId
+		,tt.category AS parentName
+		,t.epl_name AS eplName
+		,t.epl_describe AS eplDescribe
+		,t.status
+		,t.text_state AS textState
+		,is_alarm AS isAlarm
+		from rtc.rtc_epl t, rtc.rtc_epl_category tt
+		where t.parent_id = tt.id
+		and epl_id=${eplId}
+	</select>
+
+	<update id="update">
+		UPDATE rtc.rtc_epl
+		<set >
+		<if test="eplId != null">
+			epl_id = #{eplId},
+		</if>
+		<if test="parentId != null">
+			parent_id = #{parentId},
+		</if>
+		<if test="eplName != null">
+			epl_name = #{eplName},
+		</if>
+		<if test="epl != null">
+			epl = #{epl},
+		</if>
+		<if test="status != null">
+			status = #{status},
+		</if>
+		<if test="textState != null">
+			text_state = #{textState},
+		</if>
+		<if test="eplDescribe != null">
+			epl_describe = #{eplDescribe},
+		</if>
+		<if test="isAlarm != null">
+			is_alarm = #{isAlarm}
+		</if>
+		</set>
+		WHERE id = #{id}
+	</update>
+
+	<insert id="insert">
+		INSERT INTO rtc.rtc_epl(
+		epl_id
+		,parent_id
+		,epl_name
+		,epl
+		,epl_describe
+		,status
+		,text_state
+		,is_alarm
+		) VALUES (
+		#{eplId}
+		,#{parentId}
+		,#{eplName}
+		,#{epl}
+		,#{eplDescribe}
+		,#{status}
+		,#{textState}
+		,#{isAlarm}
+		)
+	</insert>
+
+	<delete id="delete">
+		DELETE FROM rtc.rtc_epl
+		WHERE id = #{id}
+	</delete>
+
+	<select id="findUniqueByProperty" resultType="Epl" statementType="STATEMENT">
+		select
+		t.id
+		,t.epl_id AS eplId
+		,t.epl
+		,t.epl_name AS eplName
+		,t.epl_describe AS eplDescribe
+		,t.parent_id AS parentId
+		,tt.category AS parentName
+		,t.status
+		,t.text_state AS textState
+		,t.is_alarm AS isAlarm
+		FROM rtc.rtc_epl t, rtc.rtc_epl_category tt
+		where t.parent_id = tt.id
+		and t.${propertyName} = '${value}'
+	</select>
+	
+	<select id="findParentTypeList" resultType="Epl">
+    	select
+		id parentId
+		,category parentName
+    	from rtc.rtc_epl_category
+  	</select>
+
+  	<update id="updateStatus" parameterType="Epl">
+		UPDATE rtc.rtc_epl SET
+		status = #{status}
+		WHERE id = #{id}
+	</update>
+	
+	  <select id="pushZookeeper" parameterType="java.lang.Integer" resultType="com.jzsec.modules.common.entity.PushEpl" >
+		select e.epl_id id,e.epl_name eplName,e.epl, concat(group_concat(concat(threshold_name,'=',threshold_value)))  thresholds
+		from rtc_epl e
+		left join rtc_threshold t
+		on e.epl_id=t.epl_id
+		where e.epl_id=#{eplId,jdbcType=INTEGER}
+		group by e.epl_id,e.epl_name,e.epl
+  	</select>
+  	
+  	<select id="findAlarmEpl" resultType="Epl" >
+		select
+		t.id AS alarmId
+		,t.epl_id AS alarmEplId
+		,t.epl_name AS alarmName
+		,t.epl AS alarmSQL
+		,t.alarm_type AS alarmType
+		,t.alarm_group_id AS alarmGroupId
+		,t.epl_describe AS alarmDescribe
+		,t.alarm_template AS alarmTemplate
+		from rtc.rtc_alarm_epl t, rtc.rtc_alarm_epl_relation tt
+		where t.epl_id=tt.alarm_epl_id
+		and tt.epl_id=#{eplId}
+	</select>
+	
+	<select id="findEplCategory" resultType="Epl">
+		SELECT id, epl_id as eplId, epl_name as eplName
+		FROM rtc_epl
+	</select>
+</mapper>
